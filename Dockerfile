@@ -15,8 +15,7 @@ COPY . .
 
 RUN composer install --no-interaction
 RUN npm install
-RUN cp .env.example .env
-RUN php artisan key:generate
+RUN php artisan key:generate --force
 RUN touch database/database.sqlite
 RUN php artisan migrate --force
 
