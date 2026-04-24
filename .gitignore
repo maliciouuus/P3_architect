@@ -1,0 +1,24 @@
+
+# Laravel
+vendor/
+node_modules/
+.env
+.env.backup
+storage/app/public
+storage/logs/*.log
+bootstrap/cache/*.php
+public/build/
+public/hot
+public/storage
+
+# Base de données
+database/database.sqlite
+
+# Scripts de génération (pas des livrables code)
+make_doc_pdf.py
+make_pptx.py
+
+# Système
+.DS_Store
+.~lock.*
+Thumbs.db

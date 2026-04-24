@@ -21,7 +21,8 @@ use App\Http\Controllers\Api\TagController;
  * Cela fonctionne avec les cookies de session existants (pas besoin de Sanctum ici).
  * Pour une API consommée par un client externe, on ajouterait Sanctum ou JWT.
  */
-Route::middleware('auth')->group(function () {
+// 'auth:web' force le guard session cookie — les appels viennent du navigateur connecté
+Route::middleware('auth:web')->group(function () {
 
     /*
      * NOTES
