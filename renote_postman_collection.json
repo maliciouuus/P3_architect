@@ -1,22 +1,119 @@
 {
   "info": {
     "name": "Renote API",
-    "description": "Collection Postman pour tester l'API REST de Renote.\n\nPré-requis : être connecté sur http://localhost:8000 dans votre navigateur (créer un compte puis se connecter).\nEnsuite dans Postman : Settings > Cookies > ajouter localhost comme domaine autorisé.",
+    "description": "Collection Postman — API REST Renote.\n\nFlux d'utilisation :\n1. Lancez 'Login' → le token est sauvegardé automatiquement dans {{token}}\n2. Toutes les autres requêtes utilisent ce token via l'onglet Auth Bearer\n\nAucun cookie, aucun CSRF.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:8000",
-      "type": "string"
-    }
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token",    "value": "",                      "type": "string" }
   ],
   "item": [
     {
-      "name": "Tags",
+      "name": "🔐 Auth",
       "item": [
         {
-          "name": "GET /api/tags — Liste tous les tags",
+          "name": "Register — créer un compte",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('✅ Token sauvegardé : ' + json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "url": "{{base_url}}/api/register",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mon Nom\",\n  \"email\": \"mon@email.fr\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login — se connecter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "    console.log('✅ Token sauvegardé : ' + json.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "url": "{{base_url}}/api/login",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mon@email.fr\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Login — mauvais mot de passe (401 attendu)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "url": "{{base_url}}/api/login",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mon@email.fr\",\n  \"password\": \"mauvais\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "Logout — déconnexion",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/logout",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏷️ Tags",
+      "item": [
+        {
+          "name": "GET /api/tags — liste tous les tags",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/tags",
@@ -26,18 +123,33 @@
           }
         },
         {
-          "name": "POST /api/tags — Créer un tag",
+          "name": "POST /api/tags — créer un tag",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/api/tags",
             "header": [
               { "key": "Accept",       "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-TOKEN", "value": "{{csrf_token}}" }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mon nouveau tag\"\n}",
+              "raw": "{\n  \"name\": \"Travail\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "POST /api/tags — nom dupliqué (422 attendu)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/tags",
+            "header": [
+              { "key": "Accept",       "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Travail\"\n}",
               "options": { "raw": { "language": "json" } }
             }
           }
@@ -45,10 +157,10 @@
       ]
     },
     {
-      "name": "Notes",
+      "name": "📝 Notes",
       "item": [
         {
-          "name": "GET /api/notes — Liste les notes",
+          "name": "GET /api/notes — liste les notes",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/notes",
@@ -58,14 +170,24 @@
           }
         },
         {
-          "name": "POST /api/notes — Créer une note",
+          "name": "GET /api/notes — sans token (401 attendu)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{base_url}}/api/notes",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ]
+          }
+        },
+        {
+          "name": "POST /api/notes — créer une note",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/api/notes",
             "header": [
               { "key": "Accept",       "value": "application/json" },
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "X-CSRF-TOKEN", "value": "{{csrf_token}}" }
+              { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
               "mode": "raw",
@@ -75,28 +197,38 @@
           }
         },
         {
-          "name": "DELETE /api/notes/:id — Supprimer une note",
+          "name": "POST /api/notes — champs manquants (422 attendu)",
           "request": {
-            "method": "DELETE",
-            "url": {
-              "raw": "{{base_url}}/api/notes/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "notes", "1"]
-            },
+            "method": "POST",
+            "url": "{{base_url}}/api/notes",
             "header": [
               { "key": "Accept",       "value": "application/json" },
-              { "key": "X-CSRF-TOKEN", "value": "{{csrf_token}}" }
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Note sans tag\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+        {
+          "name": "DELETE /api/notes/:id — supprimer une note",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/notes/1",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
             ]
           }
         },
         {
-          "name": "DELETE /api/notes/999 — Note inexistante (404)",
+          "name": "DELETE /api/notes/99999 — inexistante (404 attendu)",
           "request": {
             "method": "DELETE",
-            "url": "{{base_url}}/api/notes/999",
+            "url": "{{base_url}}/api/notes/99999",
             "header": [
-              { "key": "Accept",       "value": "application/json" },
-              { "key": "X-CSRF-TOKEN", "value": "{{csrf_token}}" }
+              { "key": "Accept", "value": "application/json" }
             ]
           }
         }
