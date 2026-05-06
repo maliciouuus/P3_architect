@@ -1,0 +1,107 @@
+ZUSTAND — FRONT OU BACK ?
+==========================
+
+RÉPONSE COURTE : Zustand c'est 100% FRONT-END.
+Il tourne dans le navigateur, pas sur le serveur.
+
+
+─── OÙ SE SITUE ZUSTAND DANS L'ARCHITECTURE ─────────────────────────────────
+
+    NAVIGATEUR (front)              SERVEUR (back)
+    ──────────────────              ──────────────
+    React (composants JSX)
+         ↕
+    Zustand (store)          →→→   API REST Laravel
+         ↕                  ←←←   (JSON)
+    api.js (axios)
+                                   Controllers
+                                   Services
+                                   Models
+                                   SQLite
+
+Zustand ne parle JAMAIS directement à la base de données.
+Il parle à api.js, qui parle à Laravel, qui parle à la BDD.
+
+
+─── À QUOI ÇA SERT CONCRÈTEMENT ─────────────────────────────────────────────
+
+Zustand stocke l'état de l'application côté navigateur :
+
+    - notes       → la liste des notes affichées
+    - tags        → la liste des tags disponibles
+    - token       → le JWT pour s'authentifier
+    - loading     → true pendant un appel API (afficher un spinner)
+    - error       → message d'erreur à afficher
+
+
+─── EXEMPLE 1 — CRÉER UNE NOTE ──────────────────────────────────────────────
+
+Sans Zustand (problème) :
+    NoteForm crée une note → mais NoteList ne le sait pas
+    → il faudrait recharger toute la page
+
+Avec Zustand :
+
+    // Dans useAppStore.js
+    addNote: async (text, tag_id) => {
+        const note = await createNote(text, tag_id) // appel API
+        set((state) => ({
+            notes: [note, ...state.notes]  // met à jour le store
+        }))
+    }
+
+    // NoteForm appelle l'action
+    const addNote = useAppStore(s => s.addNote)
+    await addNote("Mon texte", 1)
+
+    // NoteList voit automatiquement la nouvelle note
+    const notes = useAppStore(s => s.notes)
+    // → notes contient maintenant la nouvelle note, sans rechargement
+
+
+─── EXEMPLE 2 — AUTHENTIFICATION ────────────────────────────────────────────
+
+    // Après login, le token est stocké dans le store
+    login: async (email, password) => {
+        const data = await apiLogin(email, password) // POST /api/login
+        localStorage.setItem('token', data.token)
+        set({ token: data.token, user: data.user })
+    }
+
+    // Dans App.jsx — si token présent → Dashboard, sinon → Login
+    const token = useAppStore(s => s.token)
+    if (token) return <Dashboard />
+    return <Login />
+
+    // Dans api.js — le token est envoyé automatiquement
+    api.interceptors.request.use((config) => {
+        const token = localStorage.getItem('token')
+        if (token) config.headers.Authorization = `Bearer ${token}`
+        return config
+    })
+
+
+─── EXEMPLE 3 — ÉTAT DE CHARGEMENT ──────────────────────────────────────────
+
+    // Dans le store
+    fetchNotes: async () => {
+        set({ loading: true })           // active le spinner
+        const notes = await getNotes()   // appel API
+        set({ notes, loading: false })   // désactive le spinner
+    }
+
+    // Dans NoteList.jsx
+    const loading = useAppStore(s => s.loading)
+    if (loading) return <p>Chargement...</p>
+    return <div>{notes.map(...)}</div>
+
+
+─── RÉSUMÉ EN 3 POINTS ──────────────────────────────────────────────────────
+
+1. Zustand = front uniquement (navigateur)
+2. Il stocke l'état partagé entre composants React
+3. Il délègue les appels réseau à api.js — lui-même ne parle pas à la BDD
+
+ANALOGIE :
+    Zustand = la mémoire à court terme du navigateur
+    Laravel  = la mémoire à long terme (base de données)
