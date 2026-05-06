@@ -1,0 +1,73 @@
+ACCÈS À LA BASE DE DONNÉES — RENOTE
+=====================================
+
+La base de données est SQLite (fichier database/database.sqlite dans le container Docker).
+Voici 3 façons d'y accéder.
+
+
+─── 1. TINKER (console PHP interactive) ──────────────────────────────────────
+
+Commande pour entrer dans la console :
+
+    docker exec -it renote php artisan tinker
+
+Exemples de requêtes utiles :
+
+    // Voir tous les utilisateurs
+    App\Models\User::all()
+
+    // Voir tous les tokens Sanctum (créés après login/register)
+    Laravel\Sanctum\PersonalAccessToken::all()
+
+    // Voir les notes d'un utilisateur
+    App\Models\Note::where('user_id', 1)->with('tag')->get()
+
+    // Voir tous les tags
+    App\Models\Tag::all()
+
+    // Quitter
+    exit
+
+
+─── 2. SQLite EN LIGNE DE COMMANDE ───────────────────────────────────────────
+
+Commande pour accéder au fichier SQLite directement :
+
+    docker exec -it renote sqlite3 database/database.sqlite
+
+Commandes SQL utiles :
+
+    .tables                              -- liste toutes les tables
+    SELECT * FROM users;                 -- tous les utilisateurs
+    SELECT * FROM personal_access_tokens;-- tokens Sanctum actifs
+    SELECT * FROM notes;                 -- toutes les notes
+    SELECT * FROM tags;                  -- tous les tags
+    .quit                                -- quitter
+
+
+─── 3. GUI — DB BROWSER FOR SQLITE ───────────────────────────────────────────
+
+Copier le fichier SQLite hors du container :
+
+    docker cp renote:/var/www/html/database/database.sqlite /tmp/renote.sqlite
+
+Puis ouvrir /tmp/renote.sqlite avec DB Browser for SQLite (gratuit).
+Téléchargement : https://sqlitebrowser.org
+
+
+─── TABLES IMPORTANTES ───────────────────────────────────────────────────────
+
+    users                    → comptes utilisateurs
+    personal_access_tokens   → tokens Sanctum créés après login/register
+    notes                    → notes des utilisateurs
+    tags                     → tags disponibles
+    migrations               → historique des migrations Laravel
+
+
+─── LIEN AVEC SANCTUM ────────────────────────────────────────────────────────
+
+Quand vous faites POST /api/login ou POST /api/register :
+- Laravel crée un token dans la table personal_access_tokens
+- Le token est retourné dans la réponse JSON : { "token": "1|abc..." }
+- Ce token est visible et révocable directement en BDD
+- Quand vous faites POST /api/logout, le token est supprimé de la table
